@@ -1,17 +1,41 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from models import User
-from dependencies import get_session
-from main import bcrypt_context
-from schemas import UserSchema
+from dependencies import get_session, check_token
+from main import bcrypt_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXP_MIN, ADMINISTRATION, ACCOUNT_TYPES
+from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, timezone
+
 
 def mk_login():
     return "test"
 
+
 def mk_pix():
     return "123test890"
 
+
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def mk_token(user_id: str, token_duration: int=timedelta(minutes=ACCESS_TOKEN_EXP_MIN)) -> str:
+    exp_date = datetime.now(timezone.utc) + token_duration
+    data_dict = {"sub": str(user_id),
+                 "exp": exp_date}
+    encoded_jwt = jwt.encode(data_dict, SECRET_KEY, ALGORITHM)
+    return encoded_jwt
+
+
+def auth_user(email, pin, session):
+    user = session.query(User).filter(User.email==email).first()
+    if not user:
+        return False
+    elif not bcrypt_context.verify(pin, user.pin):
+        return False
+    return user
+
 
 @auth_router.get("/")
 async def authenticate() -> dict:
@@ -21,16 +45,48 @@ async def authenticate() -> dict:
     return {"message": "You access the authentication route", "auth_stats": False}
 
 @auth_router.post("/register_user")
-async def register_user(user_schema: UserSchema, session: Session = Depends(get_session)) -> dict:
-    
+async def register_user(user_schema: UserSchema, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     user = session.query(User).filter(User.email==user_schema.email).first()
     if user:
         raise HTTPException(status_code=400, detail="This email is already registered!")
+    if user_schema.access not in ACCOUNT_TYPES:
+        raise HTTPException(status_code=400, detail=f"'{user_schema.access}' account type is not valid!")
+    if user_schema.access != "client":
+        if user_check.access != "admin":
+            raise HTTPException(status_code=401, detail="You are only allowed to create an account with access as CLIENT!")
     else:
         cryp_pin = bcrypt_context.hash(user_schema.pin)
         login = mk_login()
         pix_key = mk_pix()
-        new_user = User(login, user_schema.name, user_schema.cpf, user_schema.email, cryp_pin, pix_key)
+        new_user = User(login, user_schema.name, user_schema.cpf, user_schema.email, cryp_pin, pix_key, access=user_schema.access)
         session.add(new_user)
         session.commit()
         return {"message": f"User '{user_schema.name}' registered! You pix key is: {pix_key}"}
+
+@auth_router.post("/login")
+async def login(login: LoginSchema, session: Session = Depends(get_session)) -> dict:
+    user = auth_user(login.email, login.pin, session)
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found or wrong credentials")
+    else:
+        access_token = mk_token(user.id)
+        refresh_token = mk_token(user.id, token_duration=timedelta(days=7))
+        return {"access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_type": "Bearer"}
+
+@auth_router.post("/login-form")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)) -> dict:
+    user = auth_user(form_data.username, form_data.password, session)
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found or wrong credentials")
+    else:
+        access_token = mk_token(user.id)
+        return {"access_token": access_token,
+                "token_type": "Bearer"}
+
+@auth_router.get("/refresh")
+async def use_refresh_token(user: User = Depends(check_token)) -> dict:
+    access_token = mk_token(user.id)
+    return {"access_token": access_token,
+            "token_type": "Bearer"}

@@ -11,6 +11,8 @@ cd project/
 ```
 ```bash
 echo "SECRET_KEY = {YOUR KEY HERE}" > .env
+echo "ALGORITHM = HS256" >> .env
+echo "ACCESS_TOKEN_EXP_MIN = 30" >> .env
 ```
 
 create secret key on https://randomkeygen.com/

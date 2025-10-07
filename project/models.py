@@ -17,8 +17,9 @@ class User(Base):
     pix_key = Column("pix_key", String)
     balance = Column("balance", Float)
     stats = Column("stats", Boolean, default=True)
+    access = Column("access", String, default="client")
 
-    def __init__(self, login, name, cpf, email, pin, pix_key, balance=0.00, stats=True):
+    def __init__(self, login, name, cpf, email, pin, pix_key, balance=0.00, stats=True, access="client"):
         self.login = login
         self.name = name
         self.cpf = cpf
@@ -27,6 +28,7 @@ class User(Base):
         self.pix_key = pix_key
         self.balance = balance
         self.stats = stats
+        self.access = access
 
 #Statement
 class Statement(Base):
