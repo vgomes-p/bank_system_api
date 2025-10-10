@@ -6,6 +6,7 @@ from schemas import OperationSchema, EditSchema
 from models import Statement, User, WithdrawalCount
 from main import ADMINISTRATION, ACCOUNT_TYPES
 
+
 clients_router = APIRouter(prefix="/clients", tags=["clients"], dependencies=[Depends(check_token)])
 
 
@@ -28,6 +29,7 @@ def exec_pix(value: float, personal_balance: float, alian_balance: float) -> tup
         new_alian_balance = value
     return True, new_personal_balance, new_alian_balance
 
+
 @clients_router.get("/")
 async def home() -> dict:
     """
@@ -37,7 +39,7 @@ async def home() -> dict:
     return {"message": "You access clients -> get data"}
 
 
-@clients_router.post("make_deposit/")
+@clients_router.post("/make_deposit")
 async def make_deposit(op_value: float, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     if op_value <= 0:
         raise HTTPException(status_code=422, detail="Operation value cannot be lower or equal to 0")
@@ -59,7 +61,7 @@ async def make_deposit(op_value: float, session: Session = Depends(get_session),
     raise HTTPException(status_code=500, detail="Operation failed!")
 
 
-@clients_router.post("make_withdrawal/")
+@clients_router.post("/make_withdrawal")
 async def make_withdrawal(op_value: float, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     if op_value <= 0:
         raise HTTPException(status_code=422, detail="Operation value cannot be lower or equal to 0")
@@ -99,7 +101,7 @@ async def make_withdrawal(op_value: float, session: Session = Depends(get_sessio
     raise HTTPException(status_code=500, detail="Operation failed!")
 
 
-@clients_router.post("make_pix/")
+@clients_router.post("/make_pix")
 async def make_pix(op_schema: OperationSchema, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     personal_keys = [user.cpf, user.pix_key]
     if op_schema.receiver in personal_keys:
@@ -165,6 +167,7 @@ async def make_pix(op_schema: OperationSchema, session: Session = Depends(get_se
     else:
         HTTPException(status_code=500, detail="Operation failed!")
 
+
 @clients_router.post("/client/manage/edit")
 async def manage_edit_account(edit: EditSchema, client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     client = session.query(User).filter(User.id==client_id).first()
@@ -184,6 +187,7 @@ async def manage_edit_account(edit: EditSchema, client_id: int, session: Session
     session.commit()
     return {"message": f"'{edit.name}' datas edited successfully!"}
 
+
 @clients_router.post("/client/manage/close_account")
 async def manage_close_account(client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     client = session.query(User).filter(User.id==client_id).first()
@@ -194,6 +198,7 @@ async def manage_close_account(client_id: int, session: Session = Depends(get_se
     session.delete(client)
     session.commit()
     return {"message": "Account closed!"}
+
 
 @clients_router.get("/statement")
 async def statement(session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
@@ -210,4 +215,3 @@ async def statement(session: Session = Depends(get_session), user: User = Depend
             "Receiver": receiver.name if receiver else "n/a",
         })
     return {"operations": ops_data}
-
