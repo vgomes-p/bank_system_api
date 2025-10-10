@@ -12,7 +12,6 @@ class UserSchema(BaseModel):
         from_attributes = True
 
 class OperationSchema(BaseModel):
-    op_type: str
     op_value: float
     receiver: str
 

@@ -7,14 +7,21 @@ from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
+import random
+import string
 
 
 def mk_login():
     return "test"
 
 
-def mk_pix():
-    return "123test890"
+def mk_pix() -> str:
+    pix_key = (
+        random.sample(string.ascii_letters, k=5)
+        + random.sample(string.digits, k=5)
+    )
+    random.shuffle(pix_key)
+    return "".join(pix_key)
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
