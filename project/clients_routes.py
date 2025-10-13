@@ -39,7 +39,7 @@ async def home() -> dict:
     return {"message": "You access clients -> get data"}
 
 
-@clients_router.post("/make_deposit")
+@clients_router.post("/operation/deposit")
 async def make_deposit(op_value: float, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     if op_value <= 0:
         raise HTTPException(status_code=422, detail="Operation value cannot be lower or equal to 0")
@@ -61,7 +61,7 @@ async def make_deposit(op_value: float, session: Session = Depends(get_session),
     raise HTTPException(status_code=500, detail="Operation failed!")
 
 
-@clients_router.post("/make_withdrawal")
+@clients_router.post("/operation/withdrawal")
 async def make_withdrawal(op_value: float, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     if op_value <= 0:
         raise HTTPException(status_code=422, detail="Operation value cannot be lower or equal to 0")
@@ -101,7 +101,7 @@ async def make_withdrawal(op_value: float, session: Session = Depends(get_sessio
     raise HTTPException(status_code=500, detail="Operation failed!")
 
 
-@clients_router.post("/make_pix")
+@clients_router.post("/operation/pix")
 async def make_pix(op_schema: OperationSchema, session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
     personal_keys = [user.cpf, user.pix_key]
     if op_schema.receiver in personal_keys:
@@ -168,8 +168,25 @@ async def make_pix(op_schema: OperationSchema, session: Session = Depends(get_se
         HTTPException(status_code=500, detail="Operation failed!")
 
 
-@clients_router.post("/client/manage/edit")
-async def manage_edit_account(edit: EditSchema, client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
+@clients_router.get("/operation/statement")
+async def statement(session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
+    operations = session.query(Statement).filter(Statement.op_maker==user.id).all()
+    ops_data = []
+    for op in operations:
+        maker = session.query(User).filter(User.id == op.op_maker).first()
+        receiver = session.query(User).filter(User.id == op.op_receiver).first()
+        ops_data.append({
+            "Operation": op.operation,
+            "Value": op.op_value,
+            "Time": op.op_time,
+            "Maker": maker.name if maker else "n/a",
+            "Receiver": receiver.name if receiver else "n/a",
+        })
+    return {"operations": ops_data}
+
+
+@clients_router.patch("/account/edit")
+async def edit_account(edit: EditSchema, client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     client = session.query(User).filter(User.id==client_id).first()
     if not client:
         raise HTTPException(status_code=400, detail="Client not found")
@@ -188,8 +205,8 @@ async def manage_edit_account(edit: EditSchema, client_id: int, session: Session
     return {"message": f"'{edit.name}' datas edited successfully!"}
 
 
-@clients_router.post("/client/manage/close_account")
-async def manage_close_account(client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
+@clients_router.delete("/account/close")
+async def close_account(client_id: int, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     client = session.query(User).filter(User.id==client_id).first()
     if not client:
         raise HTTPException(status_code=400, detail="Client not found")
@@ -198,20 +215,3 @@ async def manage_close_account(client_id: int, session: Session = Depends(get_se
     session.delete(client)
     session.commit()
     return {"message": "Account closed!"}
-
-
-@clients_router.get("/statement")
-async def statement(session: Session = Depends(get_session), user: User = Depends(check_token)) -> dict:
-    operations = session.query(Statement).filter(Statement.op_maker==user.id).all()
-    ops_data = []
-    for op in operations:
-        maker = session.query(User).filter(User.id == op.op_maker).first()
-        receiver = session.query(User).filter(User.id == op.op_receiver).first()
-        ops_data.append({
-            "Operation": op.operation,
-            "Value": op.op_value,
-            "Time": op.op_time,
-            "Maker": maker.name if maker else "n/a",
-            "Receiver": receiver.name if receiver else "n/a",
-        })
-    return {"operations": ops_data}

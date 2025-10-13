@@ -51,7 +51,7 @@ async def authenticate() -> dict:
     """
     return {"message": "You access the authentication route", "auth_stats": False}
 
-@auth_router.post("/register_user")
+@auth_router.post("/user")
 async def register_user(user_schema: UserSchema, session: Session = Depends(get_session), user_check: User = Depends(check_token)) -> dict:
     user = session.query(User).filter(User.email==user_schema.email).first()
     if user:
