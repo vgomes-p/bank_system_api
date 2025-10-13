@@ -1,5 +1,7 @@
-# bank_system_api | WIP
+# Bank System API | Python & FastAPI
+### This API was developed as a study project and based on the Bank-System project.
 
+## How to use?
 If you need help, run:
 ```bash
 make help
@@ -27,4 +29,9 @@ make atvvenv
 then follow the steps on make config
 ```bash
 make config
+```
+
+after finish the config, run:
+```bash
+make api
 ```
