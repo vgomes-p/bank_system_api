@@ -39,24 +39,30 @@ class Statement(Base):
     op_value = Column("op_value", Float)
     op_time = Column("op_time", String)
     op_maker = Column("op_maker", Integer, ForeignKey("users.id"))
+    op_maker_cpf = Column("op_maker_cpf", Integer, ForeignKey("users.cpf"))
     op_receiver = Column("op_receiver", String)
+    op_receive_cpf = Column("op_receiver_cpf", Integer)
 
-    def __init__(self, operation, op_value, op_time, op_maker, op_receiver):
+    def __init__(self, operation, op_value, op_time, op_maker, op_maker_cpf, op_receiver, op_receiver_cpf):
         self.operation = operation
         self.op_value = op_value
         self.op_time = op_time
         self.op_maker = op_maker
+        self.op_maker_cpf=op_maker_cpf
         self.op_receiver = op_receiver
+        self.op_receive_cpf = op_receiver_cpf
 
 #Withdrawals times
 class WithdrawalCount(Base):
     __tablename__ = "withdrawal_counter"
     id = Column("id", Integer, primary_key=True, autoincrement=True, nullable=False)
     user = Column("user", Integer, ForeignKey("users.id"))
+    user_cpf = Column("user_cpf", Integer, ForeignKey("users.cpf"))
     last_time = Column("last_time", String)
     counter = Column("counter", Integer)
 
-    def __init__(self, user, last_time, counter):
+    def __init__(self, user, user_cpf, last_time, counter):
         self.user = user
+        self.user_cpf = user_cpf
         self.last_time = last_time
         self.counter = counter

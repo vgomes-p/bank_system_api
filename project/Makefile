@@ -119,15 +119,16 @@ destroy_echo:
 	@sleep 1
 	@clear
 
+
 clean:
 	@clear
-# 	@make destroy_echo
+	@make destroy_echo
 	@clear
 	@echo "${YELLOW}Destruction started!${DEFAULT}"
 	@sleep 2
 	@clear
 	@echo "${PINK}Destroying venv/...${DEFAULT}"
-# 	@rm -rfd venv
+	@rm -rfd venv
 	@sleep 2
 	@clear
 	@echo "${PINK}Destroying alembic/...${DEFAULT}"
