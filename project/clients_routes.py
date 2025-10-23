@@ -95,7 +95,7 @@ async def make_withdrawal(op_value: float, session: Session = Depends(get_sessio
         else:
             if str(withdrawal_cnt.last_time) != str(operation_date):
                 print(f"DEBUG: new day detected, restarting counter!")
-                withdrawal_cnt.counter = 1
+                withdrawal_cnt.counter = 0
                 withdrawal_cnt.last_time = operation_date
             if withdrawal_cnt.counter >= 3:
                 raise HTTPException(status_code=429, detail="You reached you withdrawal limits for today!")
